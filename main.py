@@ -27,6 +27,10 @@ if "sslmode" not in DATABASE_URL:
 
 engine = create_engine(DATABASE_URL, echo=False)
 
+@app.on_event("startup")
+def on_startup():
+    SQLModel.metadata.create_all(engine)
+
 
 def get_session():
     with Session(engine) as session:
