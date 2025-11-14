@@ -1,53 +1,52 @@
-import os
 from fastapi import FastAPI, WebSocket, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from sqlmodel import SQLModel, Session, create_engine, select
+from sqlmodel import SQLModel, create_engine, Session, select
 from typing import List
+import os
 
-from models import Mensaje
+from models import Mensaje   # <-- Import correcto
 
 app = FastAPI(title="Chatsito 💬")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# --- Base de datos PostgreSQL ---
+# --- Tomar la URL desde Render ---
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-engine = create_engine(DATABASE_URL, echo=True)
-SQLModel.metadata.create_all(engine)
+if not DATABASE_URL:
+    raise Exception("DATABASE_URL no está definida")
 
-
-# Agregar sslmode=require para Supabase
+# Agregar sslmode=require si no está presente
 if "sslmode" not in DATABASE_URL:
     if "?" in DATABASE_URL:
         DATABASE_URL += "&sslmode=require"
     else:
         DATABASE_URL += "?sslmode=require"
 
-engine = create_engine(DATABASE_URL, echo=True)
+engine = create_engine(DATABASE_URL, echo=False)
 
-# Crear tablas
-SQLModel.metadata.create_all(engine)
-
-# --- WebSocket ---
-connected_clients: List[WebSocket] = []
 
 def get_session():
     with Session(engine) as session:
         yield session
 
+
+connected_clients: List[WebSocket] = []
+
+
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     connected_clients.append(websocket)
 
-    # Enviar historial
+    # cargar historial
     with Session(engine) as session:
         mensajes = session.exec(select(Mensaje)).all()
         for m in mensajes:
@@ -56,6 +55,7 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_text()
+
             if ":" in data:
                 usuario, texto = data.split(":", 1)
                 with Session(engine) as session:
@@ -64,9 +64,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     session.commit()
 
             for client in connected_clients:
-                if client.client_state.value == 1:  # solo enviar a clientes conectados
-                    await client.send_text(data)
+                await client.send_text(data)
 
-    except Exception:
-        if websocket in connected_clients:
-            connected_clients.remove(websocket)
+    except:
+        connected_clients.remove(websocket)

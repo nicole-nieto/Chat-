@@ -6,7 +6,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise Exception("Variable de entorno DATABASE_URL no definida")
 
-# sslmode requerido para Supabase
+# Agregar sslmode=require si no está
 if "sslmode" not in DATABASE_URL:
     if "?" in DATABASE_URL:
         DATABASE_URL += "&sslmode=require"
@@ -14,5 +14,7 @@ if "sslmode" not in DATABASE_URL:
         DATABASE_URL += "?sslmode=require"
 
 engine = create_engine(DATABASE_URL, echo=True)
+
+print("Creando tablas...")
 SQLModel.metadata.create_all(engine)
 print("Tablas creadas correctamente")
