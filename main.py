@@ -13,9 +13,11 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # --- Base de datos PostgreSQL ---
-DATABASE_URL = os.getenv("DATABASE_URL")  # Leer de variable de entorno
-if not DATABASE_URL:
-    raise Exception("Variable de entorno DATABASE_URL no definida")
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+engine = create_engine(DATABASE_URL, echo=True)
+SQLModel.metadata.create_all(engine)
+
 
 # Agregar sslmode=require para Supabase
 if "sslmode" not in DATABASE_URL:
