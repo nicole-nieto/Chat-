@@ -1,25 +1,35 @@
+import os
 from fastapi import FastAPI, WebSocket, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from sqlmodel import SQLModel, Field, create_engine, Session, select
+from sqlmodel import SQLModel, Session, create_engine, select
 from typing import List
+
+from models import Mensaje
 
 app = FastAPI(title="Chatsito 💬")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# --- Base de datos PostgreSQL con psycopg3 ---
-DATABASE_URL = "postgresql+psycopg://postgres:Lunita48@db.yeheyhewslionqxzftji.supabase.co:5432/postgres"
-engine = create_engine(DATABASE_URL, echo=False)
+# --- Base de datos PostgreSQL ---
+DATABASE_URL = os.getenv("DATABASE_URL")  # Leer de variable de entorno
+if not DATABASE_URL:
+    raise Exception("Variable de entorno DATABASE_URL no definida")
 
-class Mensaje(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-    usuario: str
-    texto: str
+# Agregar sslmode=require para Supabase
+if "sslmode" not in DATABASE_URL:
+    if "?" in DATABASE_URL:
+        DATABASE_URL += "&sslmode=require"
+    else:
+        DATABASE_URL += "?sslmode=require"
 
+engine = create_engine(DATABASE_URL, echo=True)
+
+# Crear tablas
 SQLModel.metadata.create_all(engine)
 
+# --- WebSocket ---
 connected_clients: List[WebSocket] = []
 
 def get_session():
@@ -44,7 +54,6 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_text()
-
             if ":" in data:
                 usuario, texto = data.split(":", 1)
                 with Session(engine) as session:
@@ -53,7 +62,9 @@ async def websocket_endpoint(websocket: WebSocket):
                     session.commit()
 
             for client in connected_clients:
-                await client.send_text(data)
+                if client.client_state.value == 1:  # solo enviar a clientes conectados
+                    await client.send_text(data)
 
-    except:
-        connected_clients.remove(websocket)
+    except Exception:
+        if websocket in connected_clients:
+            connected_clients.remove(websocket)
