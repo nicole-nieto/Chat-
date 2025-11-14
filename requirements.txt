@@ -3,4 +3,5 @@ uvicorn[standard]
 jinja2
 sqlalchemy
 sqlmodel
-psycopg[binary]
+psycopg[binary]==3.1.18
+

@@ -9,3 +9,4 @@ services:
     envVars:
       - key: DATABASE_URL
         value: postgresql+psycopg://postgres:Lunita48@db.yeheyhewslionqxzftji.supabase.co:5432/postgres
+
