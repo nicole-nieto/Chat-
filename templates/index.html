@@ -1,4 +1,3 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -6,18 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Chatsito 💬</title>
 
-  <!-- Cargamos el CSS desde /static/style.css -->
+  
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <!-- Estructura simple del chat -->
+  
   <div class="chat-container">
     <h1>Chatsito 💬</h1>
 
-    <!-- Contenedor donde se mostrarán los mensajes -->
+    
     <div id="chat-box" class="chat-box"></div>
 
-    <!-- Form para enviar mensajes -->
+    
     <form id="chat-form">
       <input type="text" id="username" placeholder="Tu nombre..." required>
       <input type="text" id="message" placeholder="Escribe un mensaje..." required>
@@ -25,7 +24,6 @@
     </form>
   </div>
 
-  <!-- Cargamos el JS que maneja WebSocket -->
   <script src="/static/app.js"></script>
 </body>
 </html>
